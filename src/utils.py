@@ -104,3 +104,17 @@ def evaluate_models(
 
     except Exception as e:
         raise CustomException(e, sys)
+
+
+def load_object(file_path):
+    """
+    This function is responsible for loading the object from the file
+    param file_path: path where the object needs to be loaded
+    return: object
+    """
+    try:
+        with open(file_path, "rb") as file_obj:
+            return dill.load(file_obj)
+
+    except Exception as e:
+        raise CustomException(e, sys)
