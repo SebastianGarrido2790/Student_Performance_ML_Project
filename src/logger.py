@@ -2,15 +2,17 @@ import logging
 import os
 from datetime import datetime
 
-LOG_FILE = f"{datetime.now().strftime('%m_%d_%Y_%H_%M_%S')}.log"
-logs_path = os.path.join(os.getcwd(), "logs", LOG_FILE)
-os.makedirs(logs_path, exist_ok=True)
+# Create a logs directory if it doesn't exist
+logs_dir = os.path.join(os.getcwd(), "logs")
+os.makedirs(logs_dir, exist_ok=True)
 
-LOG_FILE_PATH = os.path.join(logs_path, LOG_FILE)
+# Generate a log file name with a datetime stamp
+log_filename = f"{datetime.now().strftime('%m_%d_%Y_%H_%M_%S')}.log"
+LOG_FILE_PATH = os.path.join(logs_dir, log_filename)
 
 logging.basicConfig(
     filename=LOG_FILE_PATH,
-    format_str = "[%(asctime)s] %(module)s.%(funcName)s - %(lineno)d - %(levelname)s - %(message)s"
+    format="[%(asctime)s] %(module)s.%(funcName)s - %(lineno)d - %(levelname)s - %(message)s",
     level=logging.INFO,
 )
 
