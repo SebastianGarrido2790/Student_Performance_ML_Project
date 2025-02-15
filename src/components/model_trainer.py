@@ -3,20 +3,13 @@ import sys
 from dataclasses import dataclass
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
-from sklearn.preprocessing import OneHotEncoder, StandardScaler
-from sklearn.compose import ColumnTransformer
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
-from sklearn.model_selection import cross_validate
+from sklearn.metrics import r2_score
 from sklearn.neighbors import KNeighborsRegressor
 from sklearn.ensemble import RandomForestRegressor, AdaBoostRegressor
 from sklearn.svm import SVR
 from sklearn.linear_model import LinearRegression, Ridge, Lasso
 from catboost import CatBoostRegressor
 from xgboost import XGBRegressor
-import warnings
 from src.exception import CustomException
 from src.logger import logging
 from src.utils import save_object, evaluate_models
@@ -45,26 +38,38 @@ class ModelTrainer:
                 "Lasso": Lasso(),
                 "Ridge": Ridge(),
                 "K-Neighbors Regressor": KNeighborsRegressor(),
+                "SVR": SVR(),
                 "Random Forest Regressor": RandomForestRegressor(),
                 "XGBRegressor": XGBRegressor(),
                 "CatBoosting Regressor": CatBoostRegressor(verbose=False),
                 "AdaBoost Regressor": AdaBoostRegressor(),
             }
-            model_results: dict = evaluate_models(
+            # Get both the report and the tuned models
+            model_results, tuned_models = evaluate_models(
                 X_train, y_train, X_test, y_test, models
             )
+            for model_name, metrics in model_results.items():
+                logging.info(
+                    f"Model: {model_name}, Train R2: {metrics['train_score']:.4f}, Test R2: {metrics['test_score']:.4f}"
+                )
+
+            # Select the best model based on the test_score from the report
             best_model_name = max(
                 model_results, key=lambda k: model_results[k]["test_score"]
             )
             best_model_score = model_results[best_model_name]["test_score"]
-            best_model = models[best_model_name]
+            best_model = tuned_models[best_model_name]
+
             logging.info(
-                f"Best Model: {best_model_name} with R2 score: {best_model_score}"
+                f"Best model: {best_model_name} with Train R²: {model_results[best_model_name]['train_score']:.4f} and "
+                f"Test R²: {best_model_score:.4f}"
             )
+
             if best_model_score < 0.75:
                 raise CustomException("No good model found")
             logging.info("Best model found")
 
+            # Save the best model
             save_object(
                 file_path=self.model_trainer_config.trained_model_file_path,
                 obj=best_model,
@@ -72,7 +77,7 @@ class ModelTrainer:
 
             predicted = best_model.predict(X_test)
             r2_square = r2_score(y_test, predicted)
-            return r2_square
+            return best_model_name, r2_square
 
         except Exception as e:
             raise CustomException(e, sys)
